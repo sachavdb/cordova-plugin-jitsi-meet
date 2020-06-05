@@ -5,6 +5,7 @@ import org.apache.cordova.CallbackContext;
 import org.apache.cordova.PluginResult;
 import org.apache.cordova.PermissionHelper;
 
+import org.jitsi.meet.sdk.JitsiMeetUserInfo;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -49,10 +50,12 @@ public class JitsiPlugin extends CordovaPlugin implements JitsiMeetActivityInter
 
     checkPermission();
 
-    if (action.equals("loadURL")) {
-      String url = args.getString(0);
-      String key = args.getString(1);
-      this.loadURL(url, key, callbackContext);
+    if (action.equals("loadURL_V2")) {
+        JSONObject parameters = args.getJSONObject(0);
+        String url = parameters.getString("url");
+        String key = parameters.getString("key");
+        String displayName = parameters.getString("displayName");
+      this.loadURL(url, key, displayName, callbackContext);
       return true;
     } else if (action.equals("destroy")) {
       this.destroy(callbackContext);
@@ -102,7 +105,7 @@ public class JitsiPlugin extends CordovaPlugin implements JitsiMeetActivityInter
     }
   }
 
-  private void loadURL(final String url, final String key, final CallbackContext callbackContext) {
+  private void loadURL(final String url, final String key, final String displayName, final CallbackContext callbackContext) {
     Log.e(TAG, "loadURL called : "+url);
     
     cordova.getActivity().runOnUiThread(new Runnable() {
@@ -117,14 +120,24 @@ public class JitsiPlugin extends CordovaPlugin implements JitsiMeetActivityInter
             e.printStackTrace();
             throw new RuntimeException("Invalid server URL!");
         }
-        
-        JitsiMeetConferenceOptions options = new JitsiMeetConferenceOptions.Builder()          
-          .setRoom(url)
-          .setSubject(" ")
-          .setFeatureFlag("chat.enabled", false)
-          .setFeatureFlag("invite.enabled", false)          
-          .setFeatureFlag("calendar.enabled", false)
-          .setWelcomePageEnabled(false)
+
+      JitsiMeetConferenceOptions.Builder optionsBuilder = new JitsiMeetConferenceOptions.Builder()
+            .setRoom(url)
+            .setSubject(" ")
+            .setFeatureFlag("chat.enabled", false)
+            .setFeatureFlag("invite.enabled", false)
+            .setFeatureFlag("calendar.enabled", false)
+            .setWelcomePageEnabled(false);
+
+        if(displayName != null && !displayName.isEmpty()) {
+            JitsiMeetUserInfo userInfo = new JitsiMeetUserInfo();
+            userInfo.setDisplayName(displayName);
+
+            optionsBuilder = optionsBuilder
+                    .setUserInfo(userInfo);
+        }
+
+        JitsiMeetConferenceOptions options = optionsBuilder
           .build();
                 
 //         view.join(options);
